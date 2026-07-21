@@ -1,9 +1,9 @@
-"""Chat model construction (LiteLLM-backed).
+"""Chat model construction (provider-routed).
 
-A single :func:`build_chat_model` builds a LangChain ``ChatLiteLLM`` from
-settings, so the same graph runs on any vendor (OSS or frontier) by changing the
-model string / ``api_base``. Gateway/routing concerns now live in the external
-LiteLLM proxy, so no in-process gateway abstraction is needed here.
+A single :func:`build_chat_model` builds a LangChain chat model from settings,
+routing on ``settings.provider`` between hosted OpenAI (``ChatOpenAI``) and
+local Ollama (``ChatOllama``). Both integrations implement ``bind_tools``
+natively, so the agent graph is provider-agnostic.
 """
 
 from __future__ import annotations
@@ -15,12 +15,35 @@ from wellness.logging import get_logger
 
 log = get_logger(service="llm")
 
+_DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
+
 
 def build_chat_model(settings: Settings | None = None) -> BaseChatModel:
-    """Return a configured ``ChatLiteLLM`` for the given settings."""
-    from langchain_litellm import ChatLiteLLM
-
+    """Return a configured chat model for the selected provider."""
     settings = settings or get_settings()
+
+    log.info(
+        "build_llm",
+        provider=settings.provider,
+        model=settings.model,
+        api_base=settings.api_base,
+    )
+
+    if settings.provider == "ollama":
+        from langchain_ollama import ChatOllama
+
+        return ChatOllama(
+            model=settings.model,
+            base_url=settings.api_base or _DEFAULT_OLLAMA_BASE_URL,
+            temperature=settings.temperature,
+            # Ollama's max-tokens knob.
+            num_predict=settings.max_tokens,
+            # Thinking OFF by default: no reasoning trace, reliable tool calls.
+            reasoning=settings.reasoning,
+        )
+
+    from langchain_openai import ChatOpenAI
+
     kwargs: dict[str, object] = {
         "model": settings.model,
         "temperature": settings.temperature,
@@ -31,7 +54,10 @@ def build_chat_model(settings: Settings | None = None) -> BaseChatModel:
     if settings.max_tokens is not None:
         kwargs["max_tokens"] = settings.max_tokens
     if settings.api_base:
-        kwargs["api_base"] = settings.api_base
+        kwargs["base_url"] = settings.api_base
+    # The key is loaded from .env into Settings by pydantic-settings and is not
+    # necessarily present in os.environ (where ChatOpenAI would otherwise look).
+    if settings.openai_api_key:
+        kwargs["api_key"] = settings.openai_api_key
 
-    log.info("build_llm", model=settings.model, api_base=settings.api_base)
-    return ChatLiteLLM(**kwargs)
+    return ChatOpenAI(**kwargs)

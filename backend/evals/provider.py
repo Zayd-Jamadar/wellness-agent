@@ -7,8 +7,9 @@ can score the answer against what the agent actually retrieved.
 
 Per-test / per-provider config (from promptfooconfig `config:` block) is read
 from `options["config"]`:
-  - model:         LiteLLM model string (e.g. "openai/gpt-5.4-mini")
-  - api_base:      OpenAI-compatible base URL (e.g. local Ollama endpoint)
+  - provider:      chat backend to use ("openai" or "ollama")
+  - model:         bare model name (e.g. "gpt-5.4-mini" or "qwen2.5")
+  - api_base:      optional base URL (e.g. local Ollama endpoint)
   - enabled_tools: list of tool names to pin for the run
 
 Run standalone to smoke-test:  python provider.py
@@ -38,6 +39,8 @@ def call_api(
     cfg = (options or {}).get("config", {}) or {}
 
     overrides: dict[str, Any] = {}
+    if cfg.get("provider"):
+        overrides["provider"] = cfg["provider"]
     if cfg.get("model"):
         overrides["model"] = cfg["model"]
     if cfg.get("api_base"):
@@ -69,7 +72,7 @@ def call_api(
 if __name__ == "__main__":
     result = call_api(
         "What foods should form the base of a healthy diet?",
-        {"config": {"model": "openai/gpt-5.4-mini"}},
+        {"config": {"provider": "openai", "model": "gpt-5.4-mini"}},
         {},
     )
     print("output:\n", result.get("output", result.get("error")))

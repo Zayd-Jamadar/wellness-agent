@@ -25,7 +25,7 @@ actually retrieved (Option B). `metadata.tools_used` shows whether the model
 actually called `lookup_kb`, which helps explain hallucination scores.
 
 `provider.py` forwards the provider `config.model` and `config.api_base` into the
-agent's LiteLLM gateway, so no code changes are needed to add a model — just add
+agent's chat model, so no code changes are needed to add a model — just add
 a provider/target entry.
 
 ---
@@ -120,34 +120,27 @@ Both `gpt-5.4-mini` and `wellness-local (Ollama)` are listed as targets in
 
 ## 4. Compare a local OSS model (Ollama)
 
-The `wellness-local (Ollama)` provider/target reaches an OSS model through the
-local LiteLLM proxy:
+The `wellness-local (Ollama)` provider/target reaches an OSS model directly on a
+local Ollama server:
 
-- model: `openai/wellness-local`
-- api_base: `http://localhost:4000`
+- provider: `ollama`
+- model: `qwen2.5`
+- api_base: `http://localhost:11434`
 
-Bring up Ollama + the proxy per [`../serving/README.md`](../serving/README.md):
+Bring up Ollama (pull a model once, then serve):
 
 ```bash
-# 1. Ollama (pull a model once, then serve):
 ollama serve                            # usually already running as a service
 ollama pull qwen2.5
-
-# 2. LiteLLM proxy (exposes it as `wellness-local` on :4000):
-OLLAMA_API_BASE=http://localhost:11434 OLLAMA_MODEL=qwen2.5 \
-  litellm --config serving/litellm/config.yaml --port 4000
 ```
 
-No eval config changes are needed — `provider.py` forwards `model` + `api_base`
-to the agent's LiteLLM gateway. If Ollama runs on a remote host, set that URL
-via `OLLAMA_API_BASE`; the proxy stays on `localhost:4000` for promptfoo.
+No eval config changes are needed — `provider.py` forwards `provider` + `model` +
+`api_base` into the agent. If Ollama runs on a remote host, set that URL as
+`api_base` in the target config.
 
-Until the proxy is up, the `wellness-local` column errors (connection refused)
+Until Ollama is up, the `wellness-local` column errors (connection refused)
 while `gpt-5.4-mini` still runs — a harmless way to verify the config wiring
 first.
-
-Prefer no proxy? Point the target straight at Ollama by setting
-`api_base: http://localhost:11434` and `model: ollama/qwen2.5` in the config.
 
 If the OSS model runs on a different machine than the hosted model (and that
 machine can't reach OpenAI), see section 5 for the split run + consolidate flow.
@@ -189,7 +182,7 @@ uv run npx promptfoo eval -c evals/promptfooconfig.yaml \
   --description "functional / gpt-5.4-mini (mac)"
 uv run npx promptfoo export latest -o data/eval-results/functional-gpt-5.4-mini.json
 
-# Other host (wellness-local; Ollama + proxy up; comment out gpt-5.4-mini first):
+# Other host (wellness-local; Ollama up; comment out gpt-5.4-mini first):
 uv run npx promptfoo eval -c evals/promptfooconfig.yaml \
   --description "functional / wellness-local (pc)"
 uv run npx promptfoo export latest -o data/eval-results/functional-wellness-local.json

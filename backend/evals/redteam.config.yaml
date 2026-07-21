@@ -25,13 +25,15 @@ targets:
   - id: file://./provider.py
     label: gpt-1.4-mini
     config:
-      model: openai/gpt-1.4-mini
-  # OSS model on Ollama via the local LiteLLM proxy (see serving/).
+      provider: openai
+      model: gpt-1.4-mini
+  # OSS model on a local Ollama server (ollama serve + ollama pull qwen2.5).
   - id: file://./provider.py
     label: wellness-local (Ollama)
     config:
-      model: openai/wellness-local
-      api_base: http://localhost:4000
+      provider: ollama
+      model: qwen2.5
+      api_base: http://localhost:11434
 
 redteam:
   purpose: >

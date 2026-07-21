@@ -7,8 +7,8 @@ health and lifestyle questions grounded in a curated knowledge base, with two to
   combined via Reciprocal Rank Fusion) over the `kb/` markdown corpus.
 - `search_web` — Tavily web search for anything outside the KB.
 
-The LLM vendor is swappable (open-source vs frontier) through a **LiteLLM** gateway:
-change one model string, keep the same architecture.
+The LLM vendor is swappable (open-source vs frontier) via a simple provider flag:
+set `WELLNESS_PROVIDER` to `openai` or `ollama`, keep the same architecture.
 
 ## Install
 
@@ -25,20 +25,27 @@ Settings are read from the environment (prefix `WELLNESS_`) and an optional `.en
 Provider keys use their standard names.
 
 ```bash
-# Frontier example
-export WELLNESS_MODEL="openai/gpt-4o-mini"
+# Frontier example (hosted OpenAI)
+export WELLNESS_PROVIDER="openai"
+export WELLNESS_MODEL="gpt-4o-mini"
 export OPENAI_API_KEY="sk-..."
 
-# OSS example (local Ollama)
-export WELLNESS_MODEL="ollama/qwen2.5"
-export WELLNESS_API_BASE="http://localhost:11434"
+# OSS example (local Ollama: `ollama serve` + `ollama pull qwen2.5`)
+export WELLNESS_PROVIDER="ollama"
+export WELLNESS_MODEL="qwen2.5"
+export WELLNESS_API_BASE="http://localhost:11434"   # optional; this is the default
 
 # Web search
 export TAVILY_API_KEY="tvly-..."
 ```
 
-Key settings: `WELLNESS_MODEL`, `WELLNESS_API_BASE`, `WELLNESS_TEMPERATURE`,
-`WELLNESS_EMBEDDING_MODEL`, `WELLNESS_KB_TOP_K`, `WELLNESS_WEB_MAX_RESULTS`.
+Note: `OPENAI_API_KEY` is always required for KB embeddings, even when
+`WELLNESS_PROVIDER=ollama`. Ollama "thinking" mode is off by default; set
+`WELLNESS_REASONING=true` to enable it.
+
+Key settings: `WELLNESS_PROVIDER`, `WELLNESS_MODEL`, `WELLNESS_API_BASE`,
+`WELLNESS_REASONING`, `WELLNESS_TEMPERATURE`, `WELLNESS_EMBEDDING_MODEL`,
+`WELLNESS_KB_TOP_K`, `WELLNESS_WEB_MAX_RESULTS`.
 
 ## Usage
 
@@ -86,8 +93,8 @@ embeddings, which build on first boot.
 ```
 src/wellness/
   cli.py        Click CLI (serve / ask / index / eval)
-  config.py     pydantic-settings (LiteLLM model, tools, memory, KB knobs)
-  llm.py        build_chat_model() -> ChatLiteLLM (points at LiteLLM proxy)
+  config.py     pydantic-settings (provider flag, model, tools, memory, KB knobs)
+  llm.py        build_chat_model() -> ChatOpenAI/ChatOllama by WELLNESS_PROVIDER
   memory.py     SQLite checkpointer factories (sync + async)
   prompts.py    YAML prompt loader (no prompts in Python)
   logging.py    structlog context loggers

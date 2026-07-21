@@ -62,6 +62,7 @@ class KBService:
         self.db_path: Path = paths.get_db()
         self._db: sqlite3.Connection | None = None
         self._dim: int | None = None
+        self._openai_client = None
         # The service is a process-wide singleton whose connection is warmed on
         # one thread (app lifespan) then reused by tool calls dispatched to
         # executor threads. Allow cross-thread use and serialize access.
@@ -96,14 +97,18 @@ class KBService:
         return self._dim
 
     def _embed(self, texts: list[str]) -> list[list[float]]:
-        """Embed texts via the OpenAI embeddings API (through litellm)."""
-        import litellm
+        """Embed texts via the OpenAI embeddings API (needs OPENAI_API_KEY)."""
+        if self._openai_client is None:
+            from openai import OpenAI
 
-        resp = litellm.embedding(
+            # Key comes from Settings (.env), which is not necessarily exported
+            # to os.environ; fall back to the env if unset.
+            self._openai_client = OpenAI(api_key=self.settings.openai_api_key)
+        resp = self._openai_client.embeddings.create(
             model=self.settings.embedding_model,
             input=texts,
         )
-        return [item["embedding"] for item in resp["data"]]
+        return [item.embedding for item in resp.data]
 
     # -------------------------------------------------------------- chunks --
     _TOKEN_H1 = re.compile(r"^#\s+(.*)$", re.MULTILINE)

@@ -1,6 +1,6 @@
 """LangGraph runtime for the wellness agent.
 
-`WellnessAgent` wires an LLM (via the LiteLLM gateway) to the enabled tools and
+`WellnessAgent` wires an LLM (OpenAI or Ollama) to the enabled tools and
 compiles a LangGraph state machine: an ``agent`` node that calls the model and a
 ``tools`` node that executes tool calls, looping until the model stops. An
 in-memory checkpointer provides short-term (in-session) conversation memory.

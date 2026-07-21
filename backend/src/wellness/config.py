@@ -7,6 +7,7 @@ different LLM vendors (OSS vs frontier) by changing configuration only.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -34,18 +35,30 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # --- LLM gateway (LiteLLM) ---
+    # --- LLM provider routing ---
+    provider: Literal["openai", "ollama"] = Field(
+        default="openai",
+        description="Which chat backend to use: hosted OpenAI (ChatOpenAI) or "
+        "local Ollama (ChatOllama).",
+    )
     model: str = Field(
-        default="openai/gpt-4o-mini",
-        description="LiteLLM model string, e.g. 'anthropic/claude-3-5-sonnet' "
-        "or 'ollama/qwen2.5'.",
+        default="gpt-4o-mini",
+        description="Bare model name for the selected provider, e.g. "
+        "'gpt-4o-mini' (openai) or 'qwen2.5' (ollama).",
     )
     api_base: str | None = Field(
         default=None,
-        description="Optional base URL for OpenAI-compatible / self-hosted endpoints.",
+        description="Optional base URL. For ollama, defaults to "
+        "http://localhost:11434; for openai, leave blank unless using an "
+        "OpenAI-compatible endpoint.",
     )
     temperature: float = Field(default=0.3, ge=0.0, le=2.0)
     max_tokens: int | None = Field(default=1024)
+    reasoning: bool = Field(
+        default=False,
+        description="Ollama thinking/reasoning mode. Off by default so answers "
+        "are clean and tool calls fire reliably; set true to re-enable.",
+    )
 
     # --- Tools ---
     enabled_tools: set[str] = Field(
@@ -62,6 +75,11 @@ class Settings(BaseSettings):
 
     # --- KB / embeddings (OpenAI /v1/embeddings; needs OPENAI_API_KEY) ---
     embedding_model: str = Field(default="text-embedding-3-small")
+    openai_api_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("OPENAI_API_KEY"),
+        description="OpenAI key for chat (provider=openai) and KB embeddings.",
+    )
 
     # --- Agent runtime ---
     max_tool_iterations: int = Field(

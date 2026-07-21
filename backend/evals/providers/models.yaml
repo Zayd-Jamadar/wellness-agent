@@ -1,5 +1,6 @@
 # Model variants to compare, all driving the SAME agent via provider.py.
-# Only the model (and optional api_base) change -> a fair side-by-side grid.
+# Only the provider/model (and optional api_base) change -> a fair side-by-side
+# grid.
 #
 # Referenced from promptfooconfig.yaml / redteam.yaml via YAML anchors is not
 # portable across promptfoo versions, so these are copied inline in each config.
@@ -8,13 +9,15 @@
 - id: file://./provider.py
   label: gpt-5.4-mini
   config:
-    model: openai/gpt-5.4-mini
+    provider: openai
+    model: gpt-5.4-mini
 
-# Deferred: local OSS model on Ollama (OpenAI-compatible). Uncomment when Ollama
-# is running; no code changes needed. Uses Ollama's native port 11434.
+# Deferred: local OSS model on Ollama. Uncomment when Ollama is running
+# (ollama serve + ollama pull qwen2.5); no code changes needed.
 #
 # - id: file://./provider.py
 #   label: qwen-ollama
 #   config:
-#     model: ollama/qwen2.5
+#     provider: ollama
+#     model: qwen2.5
 #     api_base: http://localhost:11434
