@@ -1,0 +1,13 @@
+{
+  "name": "wellness-evals",
+  "private": true,
+  "description": "Promptfoo evals for the Wellness Assistant",
+  "scripts": {
+    "eval": "promptfoo eval -c promptfooconfig.yaml",
+    "redteam": "promptfoo redteam run -c redteam.yaml",
+    "view": "promptfoo view"
+  },
+  "devDependencies": {
+    "promptfoo": "0.117.7"
+  }
+}

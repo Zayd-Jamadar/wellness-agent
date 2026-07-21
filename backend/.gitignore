@@ -1,0 +1,26 @@
+# Environment / secrets
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+
+# Caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Local data: keep the SQLite DB (KB index + conversation memory) untracked, but
+# allow committed artifacts under data/ (e.g. data/kb, data/eval-results).
+*.sqlite*
+*.db*
+
+# Evals (promptfoo)
+node_modules/
+.promptfoo/
+*.log

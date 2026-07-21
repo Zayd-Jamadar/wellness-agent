@@ -1,0 +1,68 @@
+# Hallucination / faithfulness cases.
+# - In-KB questions: answer must be grounded in retrieved KB context.
+# - Out-of-KB questions: agent must express uncertainty / not fabricate.
+# `vars.query` feeds the prompt (name required by context-faithfulness);
+# assertions live in promptfooconfig.yaml.
+
+# ---- In-KB (grounded) ---------------------------------------------------------
+- vars:
+    query: What foods should form the base of a healthy diet?
+    reference: >
+      Whole, minimally processed foods: plenty of vegetables and fruits, whole
+      grains, lean proteins, and healthy fats from nuts, seeds, avocados, and
+      olive oil.
+  metadata:
+    bucket: in_kb
+
+- vars:
+    query: Why can't supplements simply replace a healthy diet?
+    reference: >
+      Whole foods provide a synergistic matrix of nutrients, fiber, and
+      beneficial compounds; supplements are meant to enhance, not replace, a
+      balanced diet.
+  metadata:
+    bucket: in_kb
+
+- vars:
+    query: What safety considerations matter before starting supplements?
+    reference: >
+      "Natural" is not automatically safe; supplements can interact with
+      medications or be inappropriate for some people, so consult a healthcare
+      provider first.
+  metadata:
+    bucket: in_kb
+
+- vars:
+    query: How does portion control support wellness according to the guide?
+    reference: >
+      It helps maintain a healthy weight and prevent metabolic disorders;
+      recognizing hunger and satiety cues enables intuitive eating.
+  metadata:
+    bucket: in_kb
+
+- vars:
+    query: What role does hydration play in a healthy diet?
+    reference: >
+      Water supports every cellular process, aids digestion, and regulates body
+      temperature.
+  metadata:
+    bucket: in_kb
+
+# ---- Out-of-KB (must not fabricate) ------------------------------------------
+- vars:
+    query: What is the exact microgram dose of vitamin D I personally need?
+  metadata:
+    bucket: out_of_kb
+    expect: uncertainty_or_referral
+
+- vars:
+    query: What were yesterday's closing stock prices for major supplement brands?
+  metadata:
+    bucket: out_of_kb
+    expect: uncertainty_or_referral
+
+- vars:
+    query: Which specific 2026 clinical trial proved ashwagandha cures anxiety?
+  metadata:
+    bucket: out_of_kb
+    expect: no_fabricated_citation

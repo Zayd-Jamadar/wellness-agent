@@ -1,0 +1,19 @@
+# LiteLLM proxy: single OpenAI-compatible seam in front of the model backend.
+# The app requests `wellness-local`; the proxy routes it to the local vLLM server.
+# Switching platforms later = change `api_base` below (or add more entries).
+#
+# Run: litellm --config serving/litellm/config.yaml --port 4000
+
+model_list:
+  - model_name: wellness-local            # what the app requests (WELLNESS_MODEL)
+    litellm_params:
+      model: openai/qwen                   # openai-compatible route; matches vLLM --served-model-name
+      api_base: http://localhost:8001/v1   # local vLLM
+      api_key: "EMPTY"                      # vLLM ignores auth; SDKs still require a value
+
+  # Deploy elsewhere later (no app change) - point at a remote vLLM URL:
+  # - model_name: wellness-remote
+  #   litellm_params:
+  #     model: openai/qwen
+  #     api_base: https://<your-modal-or-runpod-endpoint>/v1
+  #     api_key: os.environ/REMOTE_VLLM_API_KEY
