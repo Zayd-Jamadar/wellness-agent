@@ -10,11 +10,11 @@ providers:
     label: gpt-5.4-mini
     config:
       model: openai/gpt-5.4-mini
-  # OSS model on vLLM, reached through the local LiteLLM proxy (see serving/).
-  # Requires the proxy on :4000 -> vLLM; until it is up this column errors while
+  # OSS model on Ollama, reached through the local LiteLLM proxy (see serving/).
+  # Requires the proxy on :4000 -> Ollama; until it is up this column errors while
   # gpt-5.4-mini still runs.
   - id: file://./provider.py
-    label: wellness-local (vLLM)
+    label: wellness-local (Ollama)
     config:
       model: openai/wellness-local
       api_base: http://localhost:4000

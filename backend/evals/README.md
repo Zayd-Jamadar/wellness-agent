@@ -8,7 +8,7 @@ Evaluates and compares the wellness agent on three axes:
 
 The same agent is driven through [`provider.py`](./provider.py); only the model
 (and optional `api_base`) change between providers, so results are a fair
-side-by-side grid — including a hosted model vs a local OSS model on vLLM.
+side-by-side grid — including a hosted model vs a local OSS model on Ollama.
 
 ## How it works
 
@@ -74,7 +74,7 @@ uv run npx promptfoo view
 ```
 
 Providers under test live in [`promptfooconfig.yaml`](./promptfooconfig.yaml):
-`gpt-5.4-mini` and `wellness-local (vLLM)`. The grader
+`gpt-5.4-mini` and `wellness-local (Ollama)`. The grader
 (`defaultTest.options.provider`) is a fixed hosted model so both providers are
 judged the same way.
 
@@ -113,37 +113,41 @@ uv run npx promptfoo redteam report      # or: uv run npx promptfoo view
 > dataset. Use `redteam generate` (3a) only when you intentionally want a new
 > attack set, and `promptfoo eval` (3b) for everything else.
 
-Both `gpt-5.4-mini` and `wellness-local (vLLM)` are listed as targets in
+Both `gpt-5.4-mini` and `wellness-local (Ollama)` are listed as targets in
 `redteam.yaml`, so a single `eval` scores the same cases against both models.
 
 ---
 
-## 4. Compare a local OSS model (vLLM)
+## 4. Compare a local OSS model (Ollama)
 
-The `wellness-local (vLLM)` provider/target reaches an OSS model through the
+The `wellness-local (Ollama)` provider/target reaches an OSS model through the
 local LiteLLM proxy:
 
 - model: `openai/wellness-local`
 - api_base: `http://localhost:4000`
 
-Bring up vLLM + the proxy per [`../serving/README.md`](../serving/README.md):
+Bring up Ollama + the proxy per [`../serving/README.md`](../serving/README.md):
 
 ```bash
-# 1. vLLM (GPU host — does NOT run on Apple Silicon):
-bash serving/vllm/run-local.sh          # serves the model as `qwen` on :8001
+# 1. Ollama (pull a model once, then serve):
+ollama serve                            # usually already running as a service
+ollama pull qwen2.5
 
 # 2. LiteLLM proxy (exposes it as `wellness-local` on :4000):
-litellm --config serving/litellm/config.yaml --port 4000
+OLLAMA_API_BASE=http://localhost:11434 OLLAMA_MODEL=qwen2.5 \
+  litellm --config serving/litellm/config.yaml --port 4000
 ```
 
 No eval config changes are needed — `provider.py` forwards `model` + `api_base`
-to the agent's LiteLLM gateway. If vLLM runs on a remote GPU host, set that URL
-as `api_base` in `serving/litellm/config.yaml`; the proxy stays on
-`localhost:4000` for promptfoo.
+to the agent's LiteLLM gateway. If Ollama runs on a remote host, set that URL
+via `OLLAMA_API_BASE`; the proxy stays on `localhost:4000` for promptfoo.
 
 Until the proxy is up, the `wellness-local` column errors (connection refused)
 while `gpt-5.4-mini` still runs — a harmless way to verify the config wiring
 first.
+
+Prefer no proxy? Point the target straight at Ollama by setting
+`api_base: http://localhost:11434` and `model: ollama/qwen2.5` in the config.
 
 If the OSS model runs on a different machine than the hosted model (and that
 machine can't reach OpenAI), see section 5 for the split run + consolidate flow.
@@ -154,10 +158,10 @@ scores.
 
 ---
 
-## 5. Running on two machines (OpenAI on Mac, vLLM on Nvidia PC)
+## 5. Running on two machines (OpenAI on Mac, Ollama on another host)
 
 If the hosted and OSS models run on different machines (e.g. `gpt-5.4-mini` on a
-Mac and `wellness-local` on an Nvidia PC that cannot reach OpenAI), evaluate each
+Mac and `wellness-local` on a host that cannot reach OpenAI), evaluate each
 model separately and consolidate afterwards. promptfoo does not merge two
 independent runs automatically, so we export each run to JSON, import both on one
 machine, and compare in the viewer.
@@ -185,7 +189,7 @@ uv run npx promptfoo eval -c evals/promptfooconfig.yaml \
   --description "functional / gpt-5.4-mini (mac)"
 uv run npx promptfoo export latest -o data/eval-results/functional-gpt-5.4-mini.json
 
-# Nvidia PC (wellness-local; vLLM + proxy up; comment out gpt-5.4-mini first):
+# Other host (wellness-local; Ollama + proxy up; comment out gpt-5.4-mini first):
 uv run npx promptfoo eval -c evals/promptfooconfig.yaml \
   --description "functional / wellness-local (pc)"
 uv run npx promptfoo export latest -o data/eval-results/functional-wellness-local.json

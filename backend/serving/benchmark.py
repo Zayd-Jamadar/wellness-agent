@@ -1,8 +1,8 @@
 """One-time cost + latency benchmark for the OSS deployment.
 
 Sends a fixed set of wellness prompts to an OpenAI-compatible endpoint (the
-LiteLLM proxy or vLLM directly), measures latency + tokens from the streamed
-response, and prints a table comparing self-hosted GPU cost against an
+LiteLLM proxy or Ollama directly), measures latency + tokens from the streamed
+response, and prints a table comparing self-hosted cost against an
 equivalent hosted API price.
 
 Cost model:

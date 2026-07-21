@@ -8,7 +8,7 @@ can score the answer against what the agent actually retrieved.
 Per-test / per-provider config (from promptfooconfig `config:` block) is read
 from `options["config"]`:
   - model:         LiteLLM model string (e.g. "openai/gpt-5.4-mini")
-  - api_base:      OpenAI-compatible base URL (e.g. local vLLM endpoint)
+  - api_base:      OpenAI-compatible base URL (e.g. local Ollama endpoint)
   - enabled_tools: list of tool names to pin for the run
 
 Run standalone to smoke-test:  python provider.py

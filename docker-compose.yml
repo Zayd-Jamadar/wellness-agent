@@ -1,0 +1,31 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Persist the SQLite DB (KB index + conversation memory) across restarts.
+      - wellness-data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Inlined into the client bundle at build time; the browser reaches the
+        # backend on the host, so localhost:8000 is correct for local compose.
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  wellness-data: {}

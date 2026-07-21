@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+
+# Caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Secrets / env
+.env
+.env.local
+
+# Local data: don't ship the SQLite DB (rebuilt in the volume at runtime).
+data/*.db
+data/*.sqlite*
+data/wellness.db*
+
+# Evals tooling (not needed for serving)
+evals/node_modules/
+.promptfoo/
+*.log
+
+# VCS / misc
+.git/
+.gitignore
+.DS_Store

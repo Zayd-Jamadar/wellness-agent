@@ -1,19 +1,15 @@
 # LiteLLM proxy: single OpenAI-compatible seam in front of the model backend.
-# The app requests `wellness-local`; the proxy routes it to the local vLLM server.
-# Switching platforms later = change `api_base` below (or add more entries).
+# The app requests `wellness-local`; the proxy routes it to a local Ollama server.
+# Everything is env-driven, so switching models or hosts = change .env only.
 #
-# Run: litellm --config serving/litellm/config.yaml --port 4000
+# Run: OLLAMA_API_BASE=http://localhost:11434 OLLAMA_MODEL=qwen2.5 \
+#        litellm --config serving/litellm/config.yaml --port 4000
 
 model_list:
   - model_name: wellness-local            # what the app requests (WELLNESS_MODEL)
     litellm_params:
-      model: openai/qwen                   # openai-compatible route; matches vLLM --served-model-name
-      api_base: http://localhost:8001/v1   # local vLLM
-      api_key: "EMPTY"                      # vLLM ignores auth; SDKs still require a value
+      model: ollama/${OLLAMA_MODEL}        # e.g. ollama/qwen2.5
+      api_base: os.environ/OLLAMA_API_BASE # e.g. http://localhost:11434
 
-  # Deploy elsewhere later (no app change) - point at a remote vLLM URL:
-  # - model_name: wellness-remote
-  #   litellm_params:
-  #     model: openai/qwen
-  #     api_base: https://<your-modal-or-runpod-endpoint>/v1
-  #     api_key: os.environ/REMOTE_VLLM_API_KEY
+  # Point at any Ollama host (remote box, another container) by setting
+  # OLLAMA_API_BASE accordingly - no app change needed.

@@ -1,0 +1,5 @@
+# Root env holds secrets (OPENAI_API_KEY, TAVILY_API_KEY) for docker compose.
+.env
+.env.local
+
+.DS_Store

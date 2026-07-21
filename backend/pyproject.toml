@@ -2,7 +2,6 @@
 name = "wellness"
 version = "0.1.0"
 description = "Wellness Assistant: an evals-ready LangGraph agent with hybrid KB search and web search."
-readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "langgraph>=0.2.60",

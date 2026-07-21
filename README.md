@@ -64,6 +64,23 @@ uv run wellness ask --only lookup_kb "..."
 uv run wellness eval
 ```
 
+## Docker Compose (frontend + backend)
+
+Run the whole stack (Next.js UI + FastAPI agent) with one command. Uses OpenAI
+via an API key; no self-hosted model stack required.
+
+```bash
+cp .env.example .env        # then set OPENAI_API_KEY (and optional TAVILY_API_KEY)
+docker compose up --build
+```
+
+- Frontend: http://localhost:3000
+- Backend:  http://localhost:8000 (health: http://localhost:8000/health)
+
+The SQLite DB (KB index + conversation memory) persists in the `wellness-data`
+volume. `OPENAI_API_KEY` is required — it powers both chat completions and KB
+embeddings, which build on first boot.
+
 ## Architecture
 
 ```

@@ -1,46 +1,43 @@
 # serving/ — OSS inference deployment
 
-Clean, portable inference path for the wellness agent:
+Clean, portable inference path for the wellness agent, powered by Ollama:
 
 ```
-app (ChatLiteLLM) --OpenAI /v1--> LiteLLM proxy :4000 --OpenAI /v1--> vLLM :8001
+app (ChatLiteLLM) --OpenAI /v1--> LiteLLM proxy :4000 --ollama api--> Ollama :11434
 ```
 
-Everything is OpenAI-compatible, so moving from local to Modal/RunPod later is a
-one-URL change in `litellm/config.yaml` — no app code changes.
+Everything is OpenAI-compatible at the proxy seam, so moving from a local Ollama
+to a remote Ollama host later is a one-env-var change (`OLLAMA_API_BASE`) — no app
+code changes.
 
 ```
 serving/
   README.md            this file
   benchmark.py         one-time cost + latency test (OpenAI client -> proxy)
-  vllm/run-local.sh    launch vLLM (prefix caching, tool calling, :8001)
-  litellm/config.yaml  proxy model_list -> vLLM
+  litellm/config.yaml  proxy model_list -> Ollama (env-driven)
 ```
-
-> vLLM CUDA serving requires an NVIDIA GPU host and does **not** run on Apple
-> Silicon. On a Mac you can still run the proxy + benchmark against a remote
-> vLLM by setting `api_base` to the remote URL.
 
 ## Prerequisites
 
-- GPU host: `pip install vllm` (pulls CUDA PyTorch). vLLM is intentionally not a
-  backend dependency, so the Mac `uv` env is unaffected.
+- [Ollama](https://ollama.com) installed and running (`ollama serve`). Runs on
+  macOS, Linux, and Windows — CPU or GPU.
 - Proxy: `pip install 'litellm[proxy]'` (or `uvx --from 'litellm[proxy]' litellm ...`).
 - Benchmark: just the `openai` client (already in the backend venv).
 
 ## Run order (local)
 
-1. **vLLM** (GPU host):
+1. **Ollama** (pull a model once, then serve):
 
    ```bash
-   bash serving/vllm/run-local.sh
-   # verify: curl http://localhost:8001/v1/models
+   ollama serve                     # usually already running as a service
+   ollama pull qwen2.5              # verify: curl http://localhost:11434/api/tags
    ```
 
-2. **LiteLLM proxy**:
+2. **LiteLLM proxy** (reads OLLAMA_API_BASE / OLLAMA_MODEL from the env):
 
    ```bash
-   litellm --config serving/litellm/config.yaml --port 4000
+   OLLAMA_API_BASE=http://localhost:11434 OLLAMA_MODEL=qwen2.5 \
+     litellm --config serving/litellm/config.yaml --port 4000
    # verify: curl http://localhost:4000/v1/models
    ```
 
@@ -53,21 +50,24 @@ serving/
    ```
 
    ```bash
-   cd backend && uv run wellness ask -q "What makes a healthy diet?"
+   cd backend && uv run wellness ask "What makes a healthy diet?"
    ```
+
+> Prefer no proxy? Point the app straight at Ollama:
+> `WELLNESS_MODEL=ollama/qwen2.5` and `WELLNESS_API_BASE=http://localhost:11434`.
 
 ## Cost + latency benchmark (one-time)
 
 Measures TTFT, end-to-end latency (p50/p95), throughput (tok/s), and prints a
-table comparing self-hosted GPU cost against an equivalent hosted API price
-(sequential vs concurrent, so continuous-batching throughput shows up):
+table comparing self-hosted cost against an equivalent hosted API price
+(sequential vs concurrent). Runs against the LiteLLM proxy or Ollama directly:
 
 ```bash
 cd backend
 uv run python ../serving/benchmark.py \
   --base-url http://localhost:4000 --model wellness-local \
   --n 20 --concurrency 4 \
-  --gpu-hourly 2.00 \                 # your GPU $/hr (RunPod/Modal/etc.)
+  --gpu-hourly 2.00 \                 # your host $/hr (0 for a machine you own)
   --api-in-price 0.15 --api-out-price 0.60   # hosted comparison ($/1M tok)
 ```
 
@@ -79,9 +79,7 @@ Add `--json out.json` to dump raw per-request results.
 
 ## Deploy elsewhere later
 
-- **Modal / RunPod**: host vLLM there (both give an OpenAI `/v1` URL with
-  PagedAttention + continuous batching), then set that URL as `api_base` in
-  `litellm/config.yaml`. Nothing else changes.
-- Point `HF_HOME` at a mounted persistent volume so weights are downloaded once
-  and survive cold starts (the biggest knob for avoiding repeat multi-GB pulls).
-- **Vercel** hosts only the app/frontend — not vLLM (no persistent GPU).
+- **Remote Ollama / any OpenAI-compatible host**: run the model on another box
+  and set that URL as `OLLAMA_API_BASE` (or point `api_base` in
+  `litellm/config.yaml` at any OpenAI-compatible endpoint). Nothing else changes.
+- **Vercel** hosts only the app/frontend — run the model host separately.

@@ -10,13 +10,11 @@
   config:
     model: openai/gpt-5.4-mini
 
-# Deferred: local OSS model on vLLM (OpenAI-compatible). Uncomment when vLLM is
-# running; no code changes needed. Pick a port that does not clash with the
-# backend server (default 8000).
+# Deferred: local OSS model on Ollama (OpenAI-compatible). Uncomment when Ollama
+# is running; no code changes needed. Uses Ollama's native port 11434.
 #
 # - id: file://./provider.py
-#   label: qwen3.5-4b-vllm
+#   label: qwen-ollama
 #   config:
-#     model: openai/qwen3.5-4b
-#     api_base: http://localhost:8001/v1
-#     api_key: EMPTY
+#     model: ollama/qwen2.5
+#     api_base: http://localhost:11434
