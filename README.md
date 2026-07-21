@@ -1,127 +1,107 @@
 # Wellness Assistant
 
-An evals-ready, multi-turn **Wellness Assistant** built on **LangGraph**. It answers
-health and lifestyle questions grounded in a curated knowledge base, with two tools:
+A multi-turn wellness agent on **LangGraph** that answers diet, exercise, sleep, and lifestyle questions.
 
-- `lookup_kb` — hybrid search (BM25 keyword + local sentence-transformers vectors,
-  combined via Reciprocal Rank Fusion) over the `kb/` markdown corpus.
-- `search_web` — Tavily web search for anything outside the KB.
+- Grounded in a curated knowledge base via `lookup_kb` (hybrid BM25 + vector search).
+- Falls back to `search_web` (Tavily) for anything outside the KB.
+- Swappable LLM: set `WELLNESS_PROVIDER` to `openai` (frontier) or `ollama` (self-hosted OSS) — same architecture.
+- Observability via **Langfuse**; safety/quality via **Promptfoo** evals.
 
-The LLM vendor is swappable (open-source vs frontier) via a simple provider flag:
-set `WELLNESS_PROVIDER` to `openai` or `ollama`, keep the same architecture.
+## System design
 
-## Install
-
-Uses [uv](https://docs.astral.sh/uv/).
-
-```bash
-cd wellness
-uv sync
+```mermaid
+flowchart LR
+  User --> FE[Next.js UI]
+  FE -->|AI SDK stream| API[FastAPI]
+  API --> Agent[LangGraph agent]
+  Agent --> Tools[ToolNode]
+  Agent --> LLM[LLM: OpenAI or Ollama]
+  Tools --> KBNode[lookup_kb]
+  Tools --> WebNode[search_web]
+  KBNode --> KB[(SQLite KB index)]
+  WebNode --> Tavily[(Tavily web search)]
+  Agent -.callbacks.-> LF[Langfuse tracing]
+  Promptfoo[Promptfoo evals] -.provider.py.-> Agent
+  Promptfoo --> Reports[reports/]
 ```
 
-## Configure
 
-Settings are read from the environment (prefix `WELLNESS_`) and an optional `.env`.
-Provider keys use their standard names.
 
-```bash
-# Frontier example (hosted OpenAI)
-export WELLNESS_PROVIDER="openai"
-export WELLNESS_MODEL="gpt-4o-mini"
-export OPENAI_API_KEY="sk-..."
 
-# OSS example (local Ollama: `ollama serve` + `ollama pull qwen2.5`)
-export WELLNESS_PROVIDER="ollama"
-export WELLNESS_MODEL="qwen2.5"
-export WELLNESS_API_BASE="http://localhost:11434"   # optional; this is the default
 
-# Web search
-export TAVILY_API_KEY="tvly-..."
-```
+## Why (build vs buy)
 
-Note: `OPENAI_API_KEY` is always required for KB embeddings, even when
-`WELLNESS_PROVIDER=ollama`. Ollama "thinking" mode is off by default; set
-`WELLNESS_REASONING=true` to enable it.
+- We **build** the agent — quality and performance are the product differentiator.
+- We **buy/rely on** Langfuse for tracing/observability instead of reinventing telemetry.
+- We **buy/rely on** Promptfoo for evals/red-teaming instead of a home-grown harness.
+- Net: engineering effort stays focused on agent behavior; observability and evals are handled by leading platforms.
 
-Key settings: `WELLNESS_PROVIDER`, `WELLNESS_MODEL`, `WELLNESS_API_BASE`,
-`WELLNESS_REASONING`, `WELLNESS_TEMPERATURE`, `WELLNESS_EMBEDDING_MODEL`,
-`WELLNESS_KB_TOP_K`, `WELLNESS_WEB_MAX_RESULTS`.
 
-## Usage
 
-```bash
-# Build (or rebuild) the KB search index
-uv run wellness index
+## Eval reports
 
-# Serve the API (for the frontend)
-uv run wellness serve            # http://127.0.0.1:8000
+- Red-team + comparison reports live in `[reports/](reports/)` (`/Users/zayd/HomeWork/wellness-agent/reports`), including `[reports/model-comparison.md](reports/model-comparison.md)`.
+- Generated with Promptfoo red-team (`promptfoo redteam generate` then `promptfoo eval`) against `gpt-5.4-mini` and local `qwen2.5`.
 
-# One-shot headless ask
-uv run wellness ask "How much exercise per week is recommended?"
 
-# Multi-turn: reuse a thread id to continue a conversation (persistent memory)
-uv run wellness ask -t sam "My name is Sam."
-uv run wellness ask -t sam "What is my name?"   # -> recalls "Sam"
 
-# Disable a tool for a session
-uv run wellness ask --no-web "..."
-uv run wellness ask --only lookup_kb "..."
+## What I'd improve given more time
 
-# Evals stub
-uv run wellness eval
-```
+**A. Agent optimization + deployment**
 
-## Docker Compose (frontend + backend)
+- Push agent evals to ~99.9% on the self-hosted model via guardrails + prompt engineering.
+- Deploy the self-hosted model on the smallest viable GPU via Kubernetes with autoscaling — quantization, KV cache, and continuous batching enabled by default.
 
-Run the whole stack (Next.js UI + FastAPI agent) with one command. Uses OpenAI
-via an API key; no self-hosted model stack required.
+**B. Product features (personalization)**
+
+- Add basic agentic UI elements edit prompt, chat branching, chat compaction, third-party integrations like reminder app etc.
+- Let users upload files and past reports to build a per-user knowledge base for tailored recommendations.
+- Add long-term, per-user memory across sessions — and extend the eval harness to cover these personalized/long-term-memory flows.
+
+
+
+## Run (Docker Compose)
 
 ```bash
-cp .env.example .env        # then set OPENAI_API_KEY (and optional TAVILY_API_KEY)
+cp .env.example .env        # set OPENAI_API_KEY and  TAVILY_API_KEY
 docker compose up --build
 ```
 
-- Frontend: http://localhost:3000
-- Backend:  http://localhost:8000 (health: http://localhost:8000/health)
+- Frontend: [http://localhost:3000](http://localhost:3000)
+- Backend: [http://localhost:8000](http://localhost:8000) (health: `/health`)
+- `OPENAI_API_KEY` powers both chat and KB embeddings; the KB index builds on first boot and persists in the `wellness-data` volume.
 
-The SQLite DB (KB index + conversation memory) persists in the `wellness-data`
-volume. `OPENAI_API_KEY` is required — it powers both chat completions and KB
-embeddings, which build on first boot.
 
-## Architecture
 
-```
-src/wellness/
-  cli.py        Click CLI (serve / ask / index / eval)
-  config.py     pydantic-settings (provider flag, model, tools, memory, KB knobs)
-  llm.py        build_chat_model() -> ChatOpenAI/ChatOllama by WELLNESS_PROVIDER
-  memory.py     SQLite checkpointer factories (sync + async)
-  prompts.py    YAML prompt loader (no prompts in Python)
-  logging.py    structlog context loggers
-  agent/
-    graph.py    LangGraph runtime (agent node + ToolNode)
-    state.py    AgentState
-    tools.py    tool registry + build_tools(enabled)
-  kb/
-    index.py    build/load vector index over kb/*.md
-    search.py   sqlite-vec KNN search (KBService)
-  api/          FastAPI app streaming the AI SDK Data Stream Protocol
-  evals/        pluggable eval interface (EvalCase / EvalResult / run_agent)
-prompts/
-  system.yml
+## Run evals on your own dataset
+
+```bash
+cd backend
+uv run wellness index                                   # build the KB index once
+uv run npx promptfoo eval -c evals/promptfooconfig.yaml  # functional (hallucination + refusal)
+uv run npx promptfoo view                                # view results
 ```
 
-## Short-term memory
+Red team (bias / harmful / safety):
 
-Conversation state is persisted per `thread_id` via a LangGraph SQLite
-checkpointer (`langgraph-checkpoint-sqlite`), so multi-turn memory survives
-across HTTP requests and process restarts:
+```bash
+cd backend
+uv run npx promptfoo redteam generate -c evals/redteam.config.yaml -o evals/redteam.yaml  # regenerate attacks
+uv run npx promptfoo eval -c evals/redteam.yaml                                           # score (repeatable)
+uv run npx promptfoo redteam report
+```
 
-- The API uses an async `AsyncSqliteSaver` opened once in the FastAPI lifespan;
-  the CLI uses a sync `SqliteSaver` per invocation.
-- The memory key is the conversation id — the frontend's `useChat` session `id`
-  over the API, or the `--thread/-t` flag from the CLI.
-- DB location: `backend/data/wellness.db` — a single SQLite file shared by the
-  KB vector index and conversation memory (override the memory path with
-  `WELLNESS_MEMORY_DB_PATH`). Disable with `WELLNESS_MEMORY_ENABLED=false` to
-  fall back to an in-memory checkpointer (useful for evals/tests).
+- Edit functional datasets in `[backend/evals/datasets/](backend/evals/datasets/)`.
+- Edit plugins/strategies in `[backend/evals/redteam.config.yaml](backend/evals/redteam.config.yaml)`, then regenerate `redteam.yaml`.
+
+
+
+## Demo
+
+
+
+Wellness Assistant demo
+
+> Video format: use **MP4 (H.264 + AAC)** for inline playback. Convert a screen recording with:
+> `ffmpeg -i demo.mov -vcodec libx264 -acodec aac assets/demo.mp4`
+
