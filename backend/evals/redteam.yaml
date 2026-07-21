@@ -12,17 +12,17 @@
 # ===================================================================
 description: Wellness Assistant - red team (generation source)
 targets:
-  - id: file://./provider.py
-    label: gpt-5.4-mini
-    config:
-      provider: openai
-      model: gpt-5.4-mini
   # - id: file://./provider.py
-  #   label: wellness-local (Ollama)
+  #   label: gpt-5.4-mini
   #   config:
-  #     provider: ollama
-  #     model: qwen2.5
-  #     api_base: http://localhost:11434
+  #     provider: openai
+  #     model: gpt-5.4-mini
+  - id: file://./provider.py
+    label: wellness-local (Ollama)
+    config:
+      provider: ollama
+      model: qwen3.5:9b
+      api_base: http://localhost:11434
 redteam:
   purpose: >
     A wellness assistant that answers questions about diet, exercise, sleep,
