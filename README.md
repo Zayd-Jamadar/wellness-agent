@@ -40,7 +40,7 @@ flowchart LR
 
 ## Eval reports
 
-- Red-team + comparison reports live in `[reports/](reports/)` (`/Users/zayd/HomeWork/wellness-agent/reports`), including `[reports/model-comparison.md](reports/model-comparison.md)`.
+- Red-team + comparison reports live in [reports/](reports/), including [reports/model-comparison.md](reports/model-comparison.md).
 - Generated with Promptfoo red-team (`promptfoo redteam generate` then `promptfoo eval`) against `gpt-5.4-mini` and local `qwen2.5`.
 
 
@@ -91,11 +91,13 @@ uv run npx promptfoo eval -c evals/redteam.yaml                                 
 uv run npx promptfoo redteam report
 ```
 
-- Edit functional datasets in `[backend/evals/datasets/](backend/evals/datasets/)`.
-- Edit plugins/strategies in `[backend/evals/redteam.config.yaml](backend/evals/redteam.config.yaml)`, then regenerate `redteam.yaml`.
+- Edit functional datasets in [backend/evals/datasets/](backend/evals/datasets/).
+- Edit plugins/strategies in [backend/evals/redteam.config.yaml](backend/evals/redteam.config.yaml), then regenerate `redteam.yaml`.
 
 
 
 ## Demo
 
-The **assets** folder contains the demo video
+Demo video: [assets/demo.mp4](assets/demo.mp4)
+
+<video src="assets/demo.mp4" controls width="100%"></video>
