@@ -29,7 +29,7 @@ flowchart LR
 
 
 
-## Why (build vs buy)
+## Build vs Buy
 
 - We **build** the agent — quality and performance are the product differentiator.
 - We **buy/rely on** Langfuse for tracing/observability instead of reinventing telemetry.
