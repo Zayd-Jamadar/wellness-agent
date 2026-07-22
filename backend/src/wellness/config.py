@@ -99,7 +99,7 @@ class Settings(BaseSettings):
 
     # --- Observability (Langfuse) ---
     langfuse_enabled: bool = Field(
-        default=True,
+        default=False,
         description="Master switch for Langfuse tracing.",
     )
     langfuse_public_key: str | None = Field(

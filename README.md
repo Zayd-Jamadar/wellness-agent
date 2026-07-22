@@ -98,10 +98,5 @@ uv run npx promptfoo redteam report
 
 ## Demo
 
-
-
-Wellness Assistant demo
-
-> Video format: use **MP4 (H.264 + AAC)** for inline playback. Convert a screen recording with:
-> `ffmpeg -i demo.mov -vcodec libx264 -acodec aac assets/demo.mp4`
+<video src="assets/demo.mp4" controls width="100%"></video>
 

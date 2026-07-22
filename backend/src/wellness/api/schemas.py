@@ -50,3 +50,20 @@ class ChatRequest(BaseModel):
     def thread_id(self) -> str | None:
         """Thread id for short-term memory + trace session grouping."""
         return self.id
+
+
+class SessionSummary(BaseModel):
+    """A past chat session row for the history sidebar."""
+
+    id: str
+    title: str
+    preview: str = ""
+    updated_at: str = ""
+
+
+class SessionDetail(BaseModel):
+    """A resumed session's transcript as AI-SDK UI messages."""
+
+    id: str
+    title: str
+    messages: list[UIMessage] = Field(default_factory=list)

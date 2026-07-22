@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from wellness import __version__
 from wellness.api.routes.chat import router as chat_router
+from wellness.api.routes.sessions import router as sessions_router
 from wellness.config import get_settings
 from wellness.logging import get_logger
 
@@ -62,4 +63,5 @@ def create_app() -> FastAPI:
         return {"status": "ok", "version": __version__}
 
     app.include_router(chat_router)
+    app.include_router(sessions_router)
     return app
