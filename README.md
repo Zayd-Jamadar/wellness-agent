@@ -20,8 +20,8 @@ flowchart LR
   Tools --> WebNode[search_web]
   KBNode --> KB[(SQLite KB index)]
   WebNode --> Tavily[(Tavily web search)]
-  Agent -.callbacks.-> LF[Langfuse tracing]
-  Promptfoo[Promptfoo evals] -.provider.py.-> Agent
+  Agent -.->|callbacks| LF[Langfuse tracing]
+  Promptfoo[Promptfoo evals] -.->|provider.py| Agent
   Promptfoo --> Reports[reports/]
 ```
 
