@@ -98,5 +98,4 @@ uv run npx promptfoo redteam report
 
 ## Demo
 
-<video src="assets/demo.mp4" controls width="100%"></video>
-
+The **assets** folder contains the demo video
